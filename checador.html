@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Checador — Casa Velasco</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --border: #1e1e2e;
+    --accent: #f5c518;
+    --accent2: #ff6b35;
+    --text: #f0f0f5;
+    --muted: #6b6b80;
+    --success: #22c55e;
+    --danger: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -25%;
+    left: -10%;
+    width: 65vw;
+    height: 65vw;
+    background: radial-gradient(circle, rgba(245,197,24,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo-area {
+    text-align: center;
+    margin-bottom: 28px;
+    animation: fadeDown 0.5s ease both;
+  }
+
+  .logo-icon {
+    width: 52px; height: 52px;
+    background: var(--accent);
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    color: #000;
+    transform: rotate(-3deg);
+    box-shadow: 0 0 40px rgba(245,197,24,0.25);
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+  }
+
+  .sucursal-badge {
+    display: inline-block;
+    background: var(--accent2);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-top: 5px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+    animation: fadeUp 0.5s ease 0.1s both;
+  }
+
+  .time-display {
+    text-align: center;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hora {
+    font-family: 'Syne', sans-serif;
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .fecha {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+    text-transform: capitalize;
+  }
+
+  label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 7px;
+  }
+
+  select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 13px 14px;
+    border-radius: 11px;
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    margin-bottom: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+  select:focus { border-color: var(--accent); }
+  select option { background: #1a1a25; }
+
+  .tipo-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .tipo-btn {
+    padding: 13px 10px;
+    border-radius: 11px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    user-select: none;
+  }
+
+  .tipo-btn .icon { font-size: 20px; display: block; margin-bottom: 3px; }
+  .tipo-btn.entrada.active { border-color: var(--success); color: var(--success); background: rgba(34,197,94,0.08); box-shadow: 0 0 18px rgba(34,197,94,0.15); }
+  .tipo-btn.salida.active  { border-color: var(--danger);  color: var(--danger);  background: rgba(239,68,68,0.08);  box-shadow: 0 0 18px rgba(239,68,68,0.15);  }
+
+  .btn-registrar {
+    width: 100%;
+    padding: 15px;
+    border-radius: 13px;
+    border: none;
+    background: var(--accent);
+    color: #000;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.2px;
+  }
+  .btn-registrar:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(245,197,24,0.35); }
+  .btn-registrar:active:not(:disabled) { transform: translateY(0); }
+  .btn-registrar:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .error-msg {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: var(--danger);
+    padding: 11px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-bottom: 14px;
+    display: none;
+  }
+
+  /* Éxito */
+  .success-screen { text-align: center; padding: 12px 0; display: none; }
+
+  .success-icon {
+    width: 76px; height: 76px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    margin-bottom: 18px;
+    border: 2px solid var(--success);
+    background: rgba(34,197,94,0.1);
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+
+  .success-screen h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+
+  .success-screen p { color: var(--muted); font-size: 13px; }
+
+  .success-detail {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin: 18px 0;
+    text-align: left;
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-row span:first-child { color: var(--muted); }
+  .detail-row span:last-child { font-weight: 600; font-size: 13px; }
+
+  .btn-nuevo {
+    width: 100%;
+    padding: 13px;
+    border-radius: 11px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .btn-nuevo:hover { border-color: var(--muted); }
+
+  @keyframes fadeDown { from { opacity:0; transform: translateY(-14px); } to { opacity:1; transform: translateY(0); } }
+  @keyframes fadeUp   { from { opacity:0; transform: translateY(14px);  } to { opacity:1; transform: translateY(0); } }
+  @keyframes popIn    { from { opacity:0; transform: scale(0.5); } to { opacity:1; transform: scale(1); } }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="logo-area">
+    <div class="logo-icon">CV</div>
+    <h1>Casa Velasco</h1>
+  </div>
+
+  <div class="card">
+    <div class="time-display">
+      <div class="hora" id="horaActual">--:--</div>
+      <div class="fecha" id="fechaActual">--</div>
+    </div>
+
+    <div id="formArea">
+      <div class="error-msg" id="errorMsg"></div>
+
+      <label>Tu nombre</label>
+      <select id="empleadoSelect" disabled>
+        <option value="">Cargando empleados…</option>
+      </select>
+
+      <label>Tipo de registro</label>
+      <div class="tipo-btns">
+        <button class="tipo-btn entrada" onclick="selTipo('entrada')" id="btnEntrada">
+          <span class="icon">🟢</span>ENTRADA
+        </button>
+        <button class="tipo-btn salida" onclick="selTipo('salida')" id="btnSalida">
+          <span class="icon">🔴</span>SALIDA
+        </button>
+      </div>
+
+      <button class="btn-registrar" id="btnRegistrar" onclick="registrar()">
+        Registrar asistencia
+      </button>
+    </div>
+
+    <div class="success-screen" id="successArea">
+      <div class="success-icon" id="successIcon">✓</div>
+      <h2 id="successTitle">¡Registro exitoso!</h2>
+      <p id="successSubtitle">Tu asistencia quedó guardada</p>
+      <div class="success-detail" id="successDetail"></div>
+      <button class="btn-nuevo" onclick="resetForm()">← Registrar otro</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  // ── Configuración fija (no editable por empleados) ─────────
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzV20LogDLCUCqI9XX56AbG45hoXSnQtKZKW6qFwMhD5zDtVouLaa5JGmIx3mI8z99bBQ/exec';
+  const SUCURSAL   = 'Express'; // Cambia a 'Reforma' en el QR de esa sucursal
+
+  let tipoSel = null;
+
+  // ── Reloj ──────────────────────────────────────────────────
+  function tick() {
+    const now = new Date();
+    document.getElementById('horaActual').textContent =
+      now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('fechaActual').textContent =
+      now.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  // ── Cargar empleados desde Sheets ─────────────────────────
+  async function cargarEmpleados() {
+    const sel = document.getElementById('empleadoSelect');
+    try {
+      const res  = await fetch(`${SCRIPT_URL}?accion=getEmpleados`);
+      const data = await res.json();
+      const lista = data.empleados || [];
+      sel.innerHTML = '<option value="">— Selecciona tu nombre —</option>';
+      lista.forEach(nombre => {
+        const opt = document.createElement('option');
+        opt.textContent = nombre;
+        sel.appendChild(opt);
+      });
+      sel.disabled = false;
+    } catch {
+      // Si falla la red, cargamos lista local de respaldo
+      sel.innerHTML = `
+        <option value="">— Selecciona tu nombre —</option>
+        <option>Alfonso</option>
+        <option>Ruth</option>
+        <option>Mary</option>
+        <option>Itazabi</option>
+        <option>Coral</option>
+        <option>Aide</option>`;
+      sel.disabled = false;
+    }
+  }
+  cargarEmpleados();
+  function selTipo(tipo) {
+    tipoSel = tipo;
+    document.getElementById('btnEntrada').classList.toggle('active', tipo === 'entrada');
+    document.getElementById('btnSalida').classList.toggle('active',  tipo === 'salida');
+  }
+
+  // ── Registrar ──────────────────────────────────────────────
+  async function registrar() {
+    const empleado = document.getElementById('empleadoSelect').value;
+    const errEl = document.getElementById('errorMsg');
+    errEl.style.display = 'none';
+
+    if (!empleado) { mostrarError('Por favor selecciona tu nombre'); return; }
+    if (!tipoSel)  { mostrarError('Selecciona Entrada o Salida'); return; }
+
+    const btn = document.getElementById('btnRegistrar');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+
+    const now = new Date();
+    const payload = {
+      accion:    'checada',
+      empleado,
+      tipo:      tipoSel,
+      sucursal:  SUCURSAL,
+      fecha:     now.toLocaleDateString('es-MX'),
+      hora:      now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      timestamp: now.toISOString()
+    };
+
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      mostrarExito(payload);
+    } catch (e) {
+      mostrarError('Error de red. Verifica tu conexión e intenta de nuevo.');
+      btn.disabled = false;
+      btn.textContent = 'Registrar asistencia';
+    }
+  }
+
+  function mostrarError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = '⚠️ ' + msg;
+    el.style.display = 'block';
+  }
+
+  function mostrarExito(d) {
+    document.getElementById('formArea').style.display = 'none';
+    document.getElementById('successArea').style.display = 'block';
+
+    const esE = d.tipo === 'entrada';
+    const ico = document.getElementById('successIcon');
+    ico.textContent = esE ? '✓' : '👋';
+    ico.style.borderColor = esE ? 'var(--success)' : 'var(--danger)';
+    ico.style.background  = esE ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)';
+    document.getElementById('successTitle').textContent    = esE ? '¡Bienvenid@!' : '¡Hasta luego!';
+    document.getElementById('successSubtitle').textContent = esE ? 'Entrada registrada correctamente' : 'Salida registrada correctamente';
+
+    document.getElementById('successDetail').innerHTML = `
+      <div class="detail-row"><span>Empleado</span><span>${d.empleado}</span></div>
+      <div class="detail-row"><span>Tipo</span><span style="color:${esE ? 'var(--success)' : 'var(--danger)'}">${d.tipo.toUpperCase()}</span></div>
+      <div class="detail-row"><span>Sucursal</span><span>${d.sucursal}</span></div>
+      <div class="detail-row"><span>Hora</span><span>${d.hora}</span></div>
+      <div class="detail-row"><span>Fecha</span><span>${d.fecha}</span></div>
+    `;
+  }
+
+  function resetForm() {
+    document.getElementById('formArea').style.display = 'block';
+    document.getElementById('successArea').style.display = 'none';
+    document.getElementById('empleadoSelect').value = '';
+    document.getElementById('errorMsg').style.display = 'none';
+    tipoSel = null;
+    document.getElementById('btnEntrada').classList.remove('active');
+    document.getElementById('btnSalida').classList.remove('active');
+    const btn = document.getElementById('btnRegistrar');
+    btn.disabled = false;
+    btn.textContent = 'Registrar asistencia';
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Casa Velasco — Sistema de Asistencia</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --border: #1e1e2e;
+    --accent: #f5c518;
+    --accent2: #ff6b35;
+    --text: #f0f0f5;
+    --muted: #6b6b80;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -20%;
+    left: -10%;
+    width: 70vw;
+    height: 70vw;
+    background: radial-gradient(circle, rgba(245,197,24,0.05) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -20%;
+    right: -10%;
+    width: 50vw;
+    height: 50vw;
+    background: radial-gradient(circle, rgba(255,107,53,0.05) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 480px;
+    position: relative;
+    z-index: 1;
+    text-align: center;
+  }
+
+  .logo-wrap {
+    margin-bottom: 40px;
+    animation: fadeDown 0.7s ease both;
+  }
+
+  .logo-box {
+    width: 72px;
+    height: 72px;
+    background: var(--accent);
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    color: #000;
+    transform: rotate(-4deg);
+    box-shadow: 0 0 60px rgba(245,197,24,0.25);
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.1;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 8px;
+    letter-spacing: 0.3px;
+  }
+
+  .cards {
+    display: grid;
+    gap: 16px;
+    margin-top: 0;
+    animation: fadeUp 0.7s ease 0.15s both;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: all 0.25s;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(245,197,24,0.12);
+  }
+
+  .card.panel:hover {
+    border-color: var(--accent2);
+    box-shadow: 0 12px 40px rgba(255,107,53,0.12);
+  }
+
+  .card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: rgba(245,197,24,0.1);
+    border: 1px solid rgba(245,197,24,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+
+  .card.panel .card-icon {
+    background: rgba(255,107,53,0.1);
+    border-color: rgba(255,107,53,0.2);
+  }
+
+  .card-info h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+
+  .card-info p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .card-arrow {
+    margin-left: auto;
+    font-size: 18px;
+    color: var(--muted);
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+
+  .card:hover .card-arrow { transform: translateX(4px); color: var(--accent); }
+  .card.panel:hover .card-arrow { color: var(--accent2); }
+
+  .footer {
+    margin-top: 40px;
+    font-size: 12px;
+    color: var(--muted);
+    animation: fadeUp 0.7s ease 0.3s both;
+  }
+
+  @keyframes fadeDown { from { opacity:0; transform: translateY(-20px); } to { opacity:1; transform: translateY(0); } }
+  @keyframes fadeUp   { from { opacity:0; transform: translateY(20px);  } to { opacity:1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="logo-wrap">
+    <div class="logo-box">CV</div>
+    <h1>Casa Velasco</h1>
+    <p class="subtitle">Sistema de Control de Asistencia</p>
+  </div>
+
+  <div class="cards">
+    <a href="checador.html" class="card">
+      <div class="card-icon">📲</div>
+      <div class="card-info">
+        <h2>Checador</h2>
+        <p>Para empleados — registra tu entrada o salida escaneando el QR</p>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+
+    <a href="panel.html" class="card panel">
+      <div class="card-icon">📊</div>
+      <div class="card-info">
+        <h2>Panel de Control</h2>
+        <p>Para el dueño — consulta registros, filtra por fecha y empleado</p>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+  </div>
+
+  <div class="footer">Express · Reforma &nbsp;—&nbsp; Puebla, México</div>
+</div>
+</body>
+</html>

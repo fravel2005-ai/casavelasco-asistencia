@@ -517,7 +517,15 @@
   let listaEmpleadosActual = [];
 
   // Fechas default: hoy
-  const hoy = new Date().toISOString().split('T')[0];
+  // OJO: "hoy" se calcula en hora de Mexico. Usar toISOString() (UTC) hacia que
+  // despues de las 18:00 el panel ya marcara el dia siguiente.
+  const TZ_MX = 'America/Mexico_City';
+  const fechaLocalISO = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ_MX, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  const hoy = fechaLocalISO(new Date());
+  // Fecha y hora se muestran SIEMPRE desde el timestamp (el instante real de la checada),
+  // porque los campos fecha/hora guardados en Sheets se desajustan por zona horaria.
+  const fmtFechaTS = (ts) => new Date(ts).toLocaleDateString('es-MX', { timeZone: TZ_MX, day: '2-digit', month: '2-digit', year: 'numeric' });
+  const fmtHoraTS  = (ts) => new Date(ts).toLocaleTimeString('es-MX', { timeZone: TZ_MX, hour: '2-digit', minute: '2-digit', hour12: false });
   document.getElementById('fechaDesde').value = hoy;
   document.getElementById('fechaHasta').value = hoy;
 
@@ -674,7 +682,7 @@
     // KPIs
     const ent  = data.filter(r => r.tipo === 'entrada').length;
     const sal  = data.filter(r => r.tipo === 'salida').length;
-    const dias = new Set(data.map(r => r.fecha)).size;
+    const dias = new Set(data.map(r => fmtFechaTS(r.timestamp))).size;
     document.getElementById('kpiTotal').textContent    = data.length;
     document.getElementById('kpiEntradas').textContent = ent;
     document.getElementById('kpiSalidas').textContent  = sal;
@@ -694,7 +702,7 @@
           <div class="nombre">👤 ${emp}</div>
           <div class="stat"><span>Entradas</span><b>${regs.filter(r=>r.tipo==='entrada').length}</b></div>
           <div class="stat"><span>Salidas</span><b>${regs.filter(r=>r.tipo==='salida').length}</b></div>
-          <div class="stat"><span>Días</span><b>${new Set(regs.map(r=>r.fecha)).size}</b></div>
+          <div class="stat"><span>Días</span><b>${new Set(regs.map(r=>fmtFechaTS(r.timestamp))).size}</b></div>
         </div>`;
     });
 
@@ -721,8 +729,8 @@
         <td><strong>${r.empleado}</strong></td>
         <td>${tB}</td>
         <td>${sB}</td>
-        <td>${r.fecha}</td>
-        <td>${r.hora}</td>
+        <td>${fmtFechaTS(r.timestamp)}</td>
+        <td>${fmtHoraTS(r.timestamp)}</td>
       </tr>`;
     });
 
@@ -733,10 +741,9 @@
   // ── Resumen del día ──────────────────────────────────────
   document.getElementById('fechaDia').value = hoy;
 
-  function fmtHoraDia(h) {
-    if (!h) return '—';
-    const m = String(h).match(/(\d{1,2}):(\d{2})/);
-    return m ? m[1].padStart(2, '0') + ':' + m[2] : String(h);
+  function fmtHoraDia(ts) {
+    if (!ts) return '—';
+    return fmtHoraTS(ts);
   }
 
   function fmtHorasDia(ms) {
@@ -750,7 +757,7 @@
     const inp = document.getElementById('fechaDia');
     const base = inp.value ? new Date(inp.value + 'T12:00:00') : new Date();
     base.setDate(base.getDate() + delta);
-    inp.value = base.toISOString().split('T')[0];
+    inp.value = fechaLocalISO(base);
     cargarResumenDia();
   }
 
@@ -839,8 +846,8 @@
       filas += `<tr>
         <td><strong>${emp}</strong></td>
         <td>${suc || '—'}</td>
-        <td>${entradas.length ? fmtHoraDia(entradas[0].hora) : '—'}</td>
-        <td>${salidas.length ? fmtHoraDia(salidas[salidas.length - 1].hora) : '—'}</td>
+        <td>${entradas.length ? fmtHoraDia(entradas[0].timestamp) : '—'}</td>
+        <td>${salidas.length ? fmtHoraDia(salidas[salidas.length - 1].timestamp) : '—'}</td>
         <td>${ms > 0 ? fmtHorasDia(ms) : '—'}</td>
         <td>${estado}</td>
       </tr>`;
@@ -858,11 +865,11 @@
     if (!registros.length) { alert('No hay datos para exportar.'); return; }
     const csv = [
       ['Empleado','Tipo','Sucursal','Fecha','Hora','Timestamp'],
-      ...registros.map(r => [r.empleado, r.tipo, r.sucursal, r.fecha, r.hora, r.timestamp])
+      ...registros.map(r => [r.empleado, r.tipo, r.sucursal, fmtFechaTS(r.timestamp), fmtHoraTS(r.timestamp), r.timestamp])
     ].map(r => r.join(',')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    a.download = `asistencia_cv_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `asistencia_cv_${hoy}.csv`;
     a.click();
   }
 </script>

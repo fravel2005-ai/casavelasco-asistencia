@@ -317,6 +317,39 @@
     cursor: pointer;
   }
 
+  /* Resumen del día */
+  .dia-nav {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 14px;
+  }
+  .btn-dia {
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); padding: 9px 16px;
+    border-radius: 9px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px;
+    cursor: pointer; transition: all 0.2s; height: 38px;
+  }
+  .btn-dia:hover { border-color: var(--accent); }
+  .btn-dia.hoy { background: var(--dark); color: #fff; border-color: var(--dark); }
+  .dia-fecha {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 12px; border-radius: 9px;
+    font-size: 13px; font-family: 'DM Sans', sans-serif;
+    outline: none; cursor: pointer; height: 38px;
+  }
+  .dia-fecha:focus { border-color: var(--accent); }
+  .dia-info { font-size: 13px; color: var(--muted); margin-left: auto; }
+  .dia-info b { color: var(--text); }
+  .dia-scroll { overflow-x: auto; }
+  .dia-table th:nth-child(3), .dia-table td:nth-child(3) { display: table-cell; }
+  .badge.est-ok    { background: var(--success-bg); color: var(--success); }
+  .badge.est-falta { background: #fefce8; color: #a16207; }
+  .badge.est-rev   { background: #fff7ed; color: #c2410c; }
+  .badge.est-none  { background: var(--danger-bg); color: var(--danger); }
+  .est-nota { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
   .spinner {
     width: 14px; height: 14px;
     border: 2px solid #ddd; border-top-color: var(--dark);
@@ -353,6 +386,21 @@
 </header>
 
 <main>
+
+  <!-- Resumen del día -->
+  <div class="section-hdr">📅 Resumen del día</div>
+  <div class="dia-nav">
+    <button class="btn-dia" onclick="moverDia(-1)">← Día anterior</button>
+    <input type="date" id="fechaDia" class="dia-fecha" onchange="cargarResumenDia()">
+    <button class="btn-dia" onclick="moverDia(1)">Día siguiente →</button>
+    <button class="btn-dia hoy" onclick="irHoyDia()">Hoy</button>
+    <span class="dia-info" id="diaInfo"></span>
+  </div>
+  <div class="table-wrap" style="margin-bottom:28px">
+    <div class="dia-scroll" id="diaArea">
+      <div class="empty"><span class="spinner"></span> Cargando resumen del día…</div>
+    </div>
+  </div>
 
   <!-- Filtros -->
   <div class="filters">
@@ -512,6 +560,7 @@
         sel.appendChild(opt);
       });
     } catch { /* usa lista vacía */ }
+    cargarResumenDia();
   }
 
   function renderEmpleados(lista) {
@@ -679,6 +728,130 @@
 
     html += `</tbody></table>`;
     document.getElementById('tableArea').innerHTML = html;
+  }
+
+  // ── Resumen del día ──────────────────────────────────────
+  document.getElementById('fechaDia').value = hoy;
+
+  function fmtHoraDia(h) {
+    if (!h) return '—';
+    const m = String(h).match(/(\d{1,2}):(\d{2})/);
+    return m ? m[1].padStart(2, '0') + ':' + m[2] : String(h);
+  }
+
+  function fmtHorasDia(ms) {
+    const min = Math.round(ms / 60000);
+    const h = Math.floor(min / 60), m = min % 60;
+    if (!h && !m) return '0 min';
+    return m ? `${h} h ${String(m).padStart(2, '0')} min` : `${h} h`;
+  }
+
+  function moverDia(delta) {
+    const inp = document.getElementById('fechaDia');
+    const base = inp.value ? new Date(inp.value + 'T12:00:00') : new Date();
+    base.setDate(base.getDate() + delta);
+    inp.value = base.toISOString().split('T')[0];
+    cargarResumenDia();
+  }
+
+  function irHoyDia() {
+    document.getElementById('fechaDia').value = hoy;
+    cargarResumenDia();
+  }
+
+  async function cargarResumenDia() {
+    const area = document.getElementById('diaArea');
+    const info = document.getElementById('diaInfo');
+    if (!area) return;
+    const fecha = document.getElementById('fechaDia').value || hoy;
+    area.innerHTML = '<div class="empty"><span class="spinner"></span> Cargando resumen…</div>';
+    info.textContent = '';
+    try {
+      // Lista de empleados fresca; si falla, se usa la última conocida
+      let empleados = listaEmpleadosActual;
+      try {
+        const rE = await fetch(`${panelUrl()}?accion=getEmpleados`);
+        const dE = await rE.json();
+        if (Array.isArray(dE.empleados)) empleados = dE.empleados;
+      } catch { /* se usa la lista conocida */ }
+
+      const params = new URLSearchParams({ accion: 'getChecadas', desde: fecha, hasta: fecha, empleado: '', sucursal: '' });
+      const res  = await fetch(`${panelUrl()}?${params}`);
+      const data = await res.json();
+      renderResumenDia(empleados, data.registros || [], fecha);
+    } catch {
+      area.innerHTML = '<div class="empty"><div class="ico">⚠️</div><p>Error al cargar el resumen del día. Verifica la URL del script.</p></div>';
+    }
+  }
+
+  function renderResumenDia(empleados, regs, fecha) {
+    const area = document.getElementById('diaArea');
+    const info = document.getElementById('diaInfo');
+    const activos = new Set(empleados);
+    // Una fila por empleado activo + cualquiera que tenga registros ese día
+    const nombres = [...new Set([...empleados, ...regs.map(r => r.empleado)])]
+      .sort((a, b) => a.localeCompare(b, 'es'));
+
+    let checaron = 0;
+    const porSucursal = { Express: new Set(), Reforma: new Set() };
+    let filas = '';
+
+    nombres.forEach(emp => {
+      const rs = regs.filter(r => r.empleado === emp)
+                     .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+      if (!rs.length) {
+        filas += `<tr>
+          <td><strong>${emp}</strong></td>
+          <td>—</td><td>—</td><td>—</td><td>—</td>
+          <td><span class="badge est-none">🔴 Sin registro</span></td>
+        </tr>`;
+        return;
+      }
+
+      if (activos.has(emp)) checaron++;
+      rs.forEach(r => { if (porSucursal[r.sucursal]) porSucursal[r.sucursal].add(emp); });
+
+      // Emparejar entrada → siguiente salida, ordenado por timestamp
+      let ms = 0, abierta = null, anomalia = '';
+      rs.forEach(r => {
+        if (r.tipo === 'entrada') {
+          if (abierta) anomalia = 'Dos entradas seguidas';
+          else abierta = r;
+        } else if (r.tipo === 'salida') {
+          if (abierta) { ms += new Date(r.timestamp) - new Date(abierta.timestamp); abierta = null; }
+          else anomalia = 'Salida sin entrada';
+        }
+      });
+
+      let estado;
+      if (anomalia)     estado = `<span class="badge est-rev">⚠️ Revisar</span><div class="est-nota">${anomalia}</div>`;
+      else if (abierta) estado = `<span class="badge est-falta">🟡 Falta salida</span>`;
+      else              estado = `<span class="badge est-ok">✅ Turno completo</span>`;
+
+      const entradas = rs.filter(r => r.tipo === 'entrada');
+      const salidas  = rs.filter(r => r.tipo === 'salida');
+      const suc = [...new Set(rs.map(r => r.sucursal))]
+        .map(s => s === 'Express'
+          ? '<span class="badge express">Express</span>'
+          : '<span class="badge reforma">Reforma</span>').join(' ');
+
+      filas += `<tr>
+        <td><strong>${emp}</strong></td>
+        <td>${suc || '—'}</td>
+        <td>${entradas.length ? fmtHoraDia(entradas[0].hora) : '—'}</td>
+        <td>${salidas.length ? fmtHoraDia(salidas[salidas.length - 1].hora) : '—'}</td>
+        <td>${ms > 0 ? fmtHorasDia(ms) : '—'}</td>
+        <td>${estado}</td>
+      </tr>`;
+    });
+
+    area.innerHTML = `<table class="dia-table"><thead><tr>
+      <th>Empleado</th><th>Sucursal</th><th>Entrada</th><th>Salida</th><th>Horas</th><th>Estado</th>
+    </tr></thead><tbody>${filas}</tbody></table>`;
+
+    const cuando = fecha === hoy ? 'hoy' : 'ese día';
+    info.innerHTML = `<b>${checaron} de ${empleados.length}</b> empleados checaron ${cuando} · Express: <b>${porSucursal.Express.size}</b> · Reforma: <b>${porSucursal.Reforma.size}</b>`;
   }
 
   function exportarCSV() {

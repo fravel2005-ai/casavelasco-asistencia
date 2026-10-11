@@ -511,6 +511,22 @@
   </div>
 </div>
 
+<!-- Modal corregir hora -->
+<div class="overlay" id="corregirOverlay" onclick="if(event.target===this)cerrarCorregir()">
+  <div class="modal">
+    <h3>✎ Corregir hora</h3>
+    <p id="corrInfo" style="font-size:13px;margin-bottom:14px"></p>
+    <label>Hora correcta</label>
+    <input type="time" id="corrHora">
+    <p style="font-size:12px;color:var(--muted);margin:-8px 0 16px">Esta corrección la autorizas tú desde tu panel y se aplica solo a este registro (útil cuando a un empleado se le olvidó checar a tiempo).</p>
+    <div id="corrError" style="color:#b91c1c;font-size:12px;margin:-8px 0 12px;display:none"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="cerrarCorregir()">Cancelar</button>
+      <button class="btn-save" id="btnGuardarCorr" onclick="guardarCorreccion()">Guardar corrección</button>
+    </div>
+  </div>
+</div>
+
 <script>
   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzV20LogDLCUCqI9XX56AbG45hoXSnQtKZKW6qFwMhD5zDtVouLaa5JGmIx3mI8z99bBQ/exec';
   let registros = [];
@@ -713,12 +729,13 @@
     }
 
     const sorted = [...data].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    window.__detalle = sorted;
 
     let html = `<table><thead><tr>
-      <th>Empleado</th><th>Tipo</th><th>Sucursal</th><th>Fecha</th><th>Hora</th>
+      <th>Empleado</th><th>Tipo</th><th>Sucursal</th><th>Fecha</th><th>Hora</th><th></th>
     </tr></thead><tbody>`;
 
-    sorted.forEach(r => {
+    sorted.forEach((r, idx) => {
       const tB = r.tipo === 'entrada'
         ? `<span class="badge entrada">🟢 Entrada</span>`
         : `<span class="badge salida">🔴 Salida</span>`;
@@ -731,6 +748,7 @@
         <td>${sB}</td>
         <td>${fmtFechaTS(r.timestamp)}</td>
         <td>${fmtHoraTS(r.timestamp)}</td>
+        <td><button class="btn-sm" style="border-color:var(--border);color:var(--muted);white-space:nowrap" onclick="abrirCorregir(${idx})">✎ Corregir</button></td>
       </tr>`;
     });
 
@@ -859,6 +877,70 @@
 
     const cuando = fecha === hoy ? 'hoy' : 'ese día';
     info.innerHTML = `<b>${checaron} de ${empleados.length}</b> empleados checaron ${cuando} · Express: <b>${porSucursal.Express.size}</b> · Reforma: <b>${porSucursal.Reforma.size}</b>`;
+  }
+
+  // ── Corregir hora de una checada ─────────────────────────
+  let registroCorrigiendo = null;
+
+  function abrirCorregir(idx) {
+    const r = (window.__detalle || [])[idx];
+    if (!r) return;
+    registroCorrigiendo = r;
+    const tipoTxt = r.tipo === 'entrada' ? '🟢 Entrada' : '🔴 Salida';
+    document.getElementById('corrInfo').innerHTML =
+      `<strong>${r.empleado}</strong> · ${tipoTxt} · ${r.sucursal}<br>` +
+      `Fecha: ${fmtFechaTS(r.timestamp)} · Hora registrada: <strong>${fmtHoraTS(r.timestamp)}</strong>`;
+    const d = new Date(r.timestamp);
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    document.getElementById('corrHora').value = `${hh}:${mm}`;
+    document.getElementById('corrError').style.display = 'none';
+    document.getElementById('corregirOverlay').classList.add('open');
+  }
+
+  function cerrarCorregir() {
+    document.getElementById('corregirOverlay').classList.remove('open');
+    registroCorrigiendo = null;
+  }
+
+  async function guardarCorreccion() {
+    if (!registroCorrigiendo) return;
+    const errEl = document.getElementById('corrError');
+    errEl.style.display = 'none';
+    const val = document.getElementById('corrHora').value;
+    if (!val) { errEl.textContent = 'Elige la hora correcta'; errEl.style.display = 'block'; return; }
+    const partes = val.split(':');
+    const hh = partes[0], mm = partes[1];
+    const base = new Date(registroCorrigiendo.timestamp);
+    base.setHours(parseInt(hh, 10), parseInt(mm, 10), 0, 0);
+    const btn = document.getElementById('btnGuardarCorr');
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    try {
+      const res = await fetch(panelUrl(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accion: 'editarChecada',
+          timestampOriginal: registroCorrigiendo.timestamp,
+          nuevoTimestamp: base.toISOString(),
+          nuevaHora: `${hh}:${mm}:00`
+        })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        cerrarCorregir();
+        alert('✅ Hora corregida');
+        cargarDatos();
+        cargarResumenDia();
+      } else {
+        errEl.textContent = data.error || 'No se pudo guardar la corrección';
+        errEl.style.display = 'block';
+      }
+    } catch {
+      errEl.textContent = 'Error de red. Intenta de nuevo.';
+      errEl.style.display = 'block';
+    }
+    btn.disabled = false; btn.textContent = 'Guardar corrección';
   }
 
   function exportarCSV() {

@@ -623,7 +623,7 @@
     try {
       const res  = await fetch(panelUrl(), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ accion: 'addEmpleado', nombre })
       });
       const data = await res.json();
@@ -653,7 +653,7 @@
     try {
       const res  = await fetch(panelUrl(), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ accion: 'removeEmpleado', nombre })
       });
       const data = await res.json();
@@ -918,7 +918,7 @@
     try {
       const res = await fetch(panelUrl(), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           accion: 'editarChecada',
           timestampOriginal: registroCorrigiendo.timestamp,
